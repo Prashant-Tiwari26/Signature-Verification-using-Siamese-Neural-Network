@@ -117,7 +117,7 @@ class Model_LRN(torch.nn.Module):
         """
         y_genuine = self.model_branch(x_genuine)
         y_test = self.model_branch(x_test)
-        return y_genuine, y_test
+        return torch.nn.functional.pairwise_distance(y_genuine, y_test)
 
 class Model_BN(torch.nn.Module):
     """
@@ -235,4 +235,4 @@ class Model_BN(torch.nn.Module):
         """
         y_genuine = self.model_branch(x_genuine)
         y_test = self.model_branch(x_test)
-        return y_genuine, y_test
+        return torch.nn.functional.pairwise_distance(y_genuine, y_test)
