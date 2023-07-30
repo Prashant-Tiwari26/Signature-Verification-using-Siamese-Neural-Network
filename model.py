@@ -2,34 +2,83 @@ import torch
 
 class Model_LRN(torch.nn.Module):
     """
-    Custom Siamese CNN model with Local Response Normalization (LRN).
+    Siamese CNN model with Local Response Normalization.
 
-    This model consists of two branches, one for processing genuine signatures and the other
-    for processing test (query) signatures. Both branches share the same architecture.
+    This model consists of three shared convolutional layers with Local Response Normalization
+    followed by Fully Connected layers for feature extraction. The architecture is designed
+    to take two input images (x_genuine and x_test) and process them through the same
+    set of convolutional layers before extracting feature vectors.
 
-    Parameters:
+    Args:
         None
 
-    Attributes:
-        genuine_arm (torch.nn.Sequential): Sequential container representing the architecture for processing genuine signatures.
-        test_arm (torch.nn.Sequential): Sequential container representing the architecture for processing test (query) signatures.
+    Returns:
+        None
 
-    Methods:
-        forward(x_genuine, x_test): Forward pass through the model.
+    Shape:
+        - Input:
+            - x_genuine (torch.Tensor): A 4D tensor representing a batch of genuine images
+              with shape (batch_size, channels, height, width).
+            - x_test (torch.Tensor): A 4D tensor representing a batch of test images
+              with shape (batch_size, channels, height, width).
+
+        - Output:
+            - y_genuine (torch.Tensor): A 2D tensor representing the feature vectors of the
+              genuine images with shape (batch_size, 128).
+            - y_test (torch.Tensor): A 2D tensor representing the feature vectors of the
+              test images with shape (batch_size, 128).
+
+    Model Architecture:
+        --------------------------------------------------------------------
+        Layer (type)            Output Shape                        Param #
+        ====================================================================
+        Conv2d-1                [batch_size, 96, 210, 145]          34,944
+        SELU-2                  [batch_size, 96, 210, 145]               0
+        LocalResponseNorm-3     [batch_size, 96, 210, 145]             192
+        SELU-4                  [batch_size, 96, 210, 145]               0
+        MaxPool2d-5             [batch_size, 96, 104, 72]                0
+        Conv2d-6                [batch_size, 256, 104, 72]         614,656
+        SELU-7                  [batch_size, 256, 104, 72]               0
+        LocalResponseNorm-8     [batch_size, 256, 104, 72]             512
+        SELU-9                  [batch_size, 256, 104, 72]               0
+        MaxPool2d-10            [batch_size, 256, 51, 35]                0
+        Dropout2d-11            [batch_size, 256, 51, 35]                0
+        Conv2d-12               [batch_size, 384, 51, 35]          885,120
+        SELU-13                 [batch_size, 384, 51, 35]                0
+        Conv2d-14               [batch_size, 256, 51, 35]          884,992
+        SELU-15                 [batch_size, 256, 51, 35]                0
+        MaxPool2d-16            [batch_size, 256, 25, 17]                0
+        Dropout2d-17            [batch_size, 256, 25, 17]                0
+        Flatten-18              [batch_size, 108800]                     0
+        Linear-19               [batch_size, 1024]             111,412,224
+        SELU-20                 [batch_size, 1024]                       0
+        Dropout1d-21            [batch_size, 1024]                       0
+        Linear-22               [batch_size, 128]                  131,200
+        ===================================================================
+        Total params: 113,963,840
+        Trainable params: 113,963,840
+        Non-trainable params: 0
+        -------------------------------------------------------------------
+
+    Note:
+        SELU activation is used after each convolutional layer, and Dropout is applied
+        for regularization to prevent overfitting.
 
     Example:
-        # Create an instance of the Model_LRN class
+        # Create an instance of the Model_LRN
         model = Model_LRN()
 
-        # Forward pass with input data (genuine and test signatures)
-        genuine_data = torch.randn(64, 3, 224, 224)
-        test_data = torch.randn(64, 3, 224, 224)
-        genuine_output, test_output = model(genuine_data, test_data)
+        # Assuming you have loaded the genuine and test images as tensors
+        genuine_images = ...  # Tensor of genuine images
+        test_images = ...  # Tensor of test images
+
+        # Pass the images through the model
+        feature_vectors_genuine, feature_vectors_test = model(genuine_images, test_images)
     """
 
     def __init__(self) -> None:
         super().__init__()
-        self.genuine_arm = torch.nn.Sequential(
+        self.model_branch = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=3, out_channels=96, kernel_size=11, stride=1),
             torch.nn.SELU(),
             torch.nn.LocalResponseNorm(alpha=0.0001, beta=0.75, size=5, k=2),
@@ -48,80 +97,106 @@ class Model_LRN(torch.nn.Module):
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
             torch.nn.Dropout2d(p=0.3),
             torch.nn.Flatten(),
-            torch.nn.Dropout1d(p=0.5),
-            torch.nn.Linear(in_features=1024, out_features=128)
-        )
-
-        self.test_arm = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=3, out_channels=96, kernel_size=11, stride=1),
+            torch.nn.Linear(in_features=108800, out_features=1024),
             torch.nn.SELU(),
-            torch.nn.LocalResponseNorm(alpha=0.0001, beta=0.75, size=5, k=2),
-            torch.nn.SELU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-            torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, stride=1, padding=2),
-            torch.nn.SELU(),
-            torch.nn.LocalResponseNorm(alpha=0.0001, beta=0.75, size=5, k=2),
-            torch.nn.SELU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-            torch.nn.Dropout2d(p=0.3),
-            torch.nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, stride=1, padding=1),
-            torch.nn.SELU(),
-            torch.nn.Conv2d(in_channels=384, out_channels=256, kernel_size=3, stride=1, padding=1),
-            torch.nn.SELU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-            torch.nn.Dropout2d(p=0.3),
-            torch.nn.Flatten(),
             torch.nn.Dropout1d(p=0.5),
             torch.nn.Linear(in_features=1024, out_features=128)
         )
 
     def forward(self, x_genuine, x_test):
         """
-        Forward pass through the model.
+        Forward pass of the Siamese CNN model.
 
-        Parameters:
-            x_genuine (torch.Tensor): Input data representing genuine signatures.
-            x_test (torch.Tensor): Input data representing test (query) signatures.
+        Args:
+            x_genuine (torch.Tensor): A batch of genuine images with shape (batch_size, channels, height, width).
+            x_test (torch.Tensor): A batch of test images with shape (batch_size, channels, height, width).
 
         Returns:
-            tuple: A tuple containing two torch.Tensors representing the output of processing
-                   genuine and test signatures, respectively.
+            torch.Tensor: A tensor representing the feature vectors of the genuine images with shape (batch_size, 128).
+            torch.Tensor: A tensor representing the feature vectors of the test images with shape (batch_size, 128).
         """
-
-        y_genuine = self.genuine_arm(x_genuine)
-        y_test = self.test_arm(x_test)
+        y_genuine = self.model_branch(x_genuine)
+        y_test = self.model_branch(x_test)
         return y_genuine, y_test
 
 class Model_BN(torch.nn.Module):
     """
-    Custom Siamese CNN model with Batch Normalization(BN).
+    Siamese CNN model with Batch Normalization.
 
-    This model consists of two branches, one for processing genuine signatures and the other
-    for processing test (query) signatures. Both branches share the same architecture.
+    This model consists of three shared convolutional layers with Batch Normalization
+    followed by Fully Connected layers for feature extraction. The architecture is designed
+    to take two input images (x_genuine and x_test) and process them through the same
+    set of convolutional layers before extracting feature vectors.
 
-    Parameters:
+    Args:
         None
 
-    Attributes:
-        genuine_arm (torch.nn.Sequential): Sequential container representing the architecture for processing genuine signatures.
-        test_arm (torch.nn.Sequential): Sequential container representing the architecture for processing test (query) signatures.
+    Returns:
+        None
 
-    Methods:
-        forward(x_genuine, x_test): Forward pass through the model.
+    Shape:
+        - Input:
+            - x_genuine (torch.Tensor): A 4D tensor representing a batch of genuine images
+              with shape (batch_size, channels, height, width).
+            - x_test (torch.Tensor): A 4D tensor representing a batch of test images
+              with shape (batch_size, channels, height, width).
+
+        - Output:
+            - y_genuine (torch.Tensor): A 2D tensor representing the feature vectors of the
+              genuine images with shape (batch_size, 128).
+            - y_test (torch.Tensor): A 2D tensor representing the feature vectors of the
+              test images with shape (batch_size, 128).
+
+    Model Architecture:
+        --------------------------------------------------------------------
+        Layer (type)            Output Shape                        Param #
+        ====================================================================
+        Conv2d-1                [batch_size, 96, 210, 145]          34,944
+        SELU-2                  [batch_size, 96, 210, 145]               0
+        BatchNorm2d-3           [batch_size, 96, 210, 145]             192
+        SELU-4                  [batch_size, 96, 210, 145]               0
+        MaxPool2d-5             [batch_size, 96, 104, 72]                0
+        Conv2d-6                [batch_size, 256, 104, 72]         614,656
+        SELU-7                  [batch_size, 256, 104, 72]               0
+        BatchNorm2d-8           [batch_size, 256, 104, 72]             512
+        SELU-9                  [batch_size, 256, 104, 72]               0
+        MaxPool2d-10            [batch_size, 256, 51, 35]                0
+        Dropout2d-11            [batch_size, 256, 51, 35]                0
+        Conv2d-12               [batch_size, 384, 51, 35]          885,120
+        SELU-13                 [batch_size, 384, 51, 35]                0
+        Conv2d-14               [batch_size, 256, 51, 35]          884,992
+        SELU-15                 [batch_size, 256, 51, 35]                0
+        MaxPool2d-16            [batch_size, 256, 25, 17]                0
+        Dropout2d-17            [batch_size, 256, 25, 17]                0
+        Flatten-18              [batch_size, 108800]                     0
+        Linear-19               [batch_size, 1024]             111,412,224
+        SELU-20                 [batch_size, 1024]                       0
+        Dropout1d-21            [batch_size, 1024]                       0
+        Linear-22               [batch_size, 128]                  131,200
+        ===================================================================
+        Total params: 113,963,840
+        Trainable params: 113,963,840
+        Non-trainable params: 0
+        -------------------------------------------------------------------
+
+    Note:
+        SELU activation is used after each convolutional layer, and Dropout is applied
+        for regularization to prevent overfitting.
 
     Example:
-        # Create an instance of the Model_BN class
+        # Create an instance of the Model_BN
         model = Model_BN()
 
-        # Forward pass with input data (genuine and test signatures)
-        genuine_data = torch.randn(64, 3, 224, 224)
-        test_data = torch.randn(64, 3, 224, 224)
-        genuine_output, test_output = model(genuine_data, test_data)
-    """
+        # Assuming you have loaded the genuine and test images as tensors
+        genuine_images = ...  # Tensor of genuine images
+        test_images = ...  # Tensor of test images
 
+        # Pass the images through the model
+        feature_vectors_genuine, feature_vectors_test = model(genuine_images, test_images)
+    """
     def __init__(self) -> None:
         super().__init__()
-        self.genuine_arm = torch.nn.Sequential(
+        self.model_branch = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=3, out_channels=96, kernel_size=11, stride=1),
             torch.nn.SELU(),
             torch.nn.BatchNorm2d(num_features=96),
@@ -140,46 +215,24 @@ class Model_BN(torch.nn.Module):
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
             torch.nn.Dropout2d(p=0.3),
             torch.nn.Flatten(),
-            torch.nn.Dropout1d(p=0.5),
-            torch.nn.Linear(in_features=1024, out_features=128)
-        )
-
-        self.test_arm = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=3, out_channels=96, kernel_size=11, stride=1),
+            torch.nn.Linear(in_features=108800, out_features=1024),
             torch.nn.SELU(),
-            torch.nn.BatchNorm2d(num_features=96),
-            torch.nn.SELU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-            torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, stride=1, padding=2),
-            torch.nn.SELU(),
-            torch.nn.BatchNorm2d(num_features=256),
-            torch.nn.SELU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-            torch.nn.Dropout2d(p=0.3),
-            torch.nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, stride=1, padding=1),
-            torch.nn.SELU(),
-            torch.nn.Conv2d(in_channels=384, out_channels=256, kernel_size=3, stride=1, padding=1),
-            torch.nn.SELU(),
-            torch.nn.MaxPool2d(kernel_size=3, stride=2),
-            torch.nn.Dropout2d(p=0.3),
-            torch.nn.Flatten(),
             torch.nn.Dropout1d(p=0.5),
             torch.nn.Linear(in_features=1024, out_features=128)
         )
 
     def forward(self, x_genuine, x_test):
         """
-        Forward pass through the model.
+        Forward pass of the Siamese CNN model.
 
-        Parameters:
-            x_genuine (torch.Tensor): Input data representing genuine signatures.
-            x_test (torch.Tensor): Input data representing test (query) signatures.
+        Args:
+            x_genuine (torch.Tensor): A batch of genuine images with shape (batch_size, channels, height, width).
+            x_test (torch.Tensor): A batch of test images with shape (batch_size, channels, height, width).
 
         Returns:
-            tuple: A tuple containing two torch.Tensors representing the output of processing
-                   genuine and test signatures, respectively.
+            torch.Tensor: A tensor representing the feature vectors of the genuine images with shape (batch_size, 128).
+            torch.Tensor: A tensor representing the feature vectors of the test images with shape (batch_size, 128).
         """
-
-        y_genuine = self.genuine_arm(x_genuine)
-        y_test = self.test_arm(x_test)
+        y_genuine = self.model_branch(x_genuine)
+        y_test = self.model_branch(x_test)
         return y_genuine, y_test
