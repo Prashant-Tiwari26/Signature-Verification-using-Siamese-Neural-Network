@@ -33,25 +33,25 @@ class Model_LRN(torch.nn.Module):
         Layer (type)            Output Shape                        Param #
         ====================================================================
         Conv2d-1                [batch_size, 96, 210, 145]          34,944
-        SELU-2                  [batch_size, 96, 210, 145]               0
+        ReLU-2                  [batch_size, 96, 210, 145]               0
         LocalResponseNorm-3     [batch_size, 96, 210, 145]             192
-        SELU-4                  [batch_size, 96, 210, 145]               0
+        ReLU-4                  [batch_size, 96, 210, 145]               0
         MaxPool2d-5             [batch_size, 96, 104, 72]                0
         Conv2d-6                [batch_size, 256, 104, 72]         614,656
-        SELU-7                  [batch_size, 256, 104, 72]               0
+        ReLU-7                  [batch_size, 256, 104, 72]               0
         LocalResponseNorm-8     [batch_size, 256, 104, 72]             512
-        SELU-9                  [batch_size, 256, 104, 72]               0
+        ReLU-9                  [batch_size, 256, 104, 72]               0
         MaxPool2d-10            [batch_size, 256, 51, 35]                0
         Dropout2d-11            [batch_size, 256, 51, 35]                0
         Conv2d-12               [batch_size, 384, 51, 35]          885,120
-        SELU-13                 [batch_size, 384, 51, 35]                0
+        ReLU-13                 [batch_size, 384, 51, 35]                0
         Conv2d-14               [batch_size, 256, 51, 35]          884,992
-        SELU-15                 [batch_size, 256, 51, 35]                0
+        ReLU-15                 [batch_size, 256, 51, 35]                0
         MaxPool2d-16            [batch_size, 256, 25, 17]                0
         Dropout2d-17            [batch_size, 256, 25, 17]                0
         Flatten-18              [batch_size, 108800]                     0
         Linear-19               [batch_size, 1024]             111,412,224
-        SELU-20                 [batch_size, 1024]                       0
+        ReLU-20                 [batch_size, 1024]                       0
         Dropout1d-21            [batch_size, 1024]                       0
         Linear-22               [batch_size, 128]                  131,200
         ===================================================================
@@ -61,7 +61,7 @@ class Model_LRN(torch.nn.Module):
         -------------------------------------------------------------------
 
     Note:
-        SELU activation is used after each convolutional layer, and Dropout is applied
+        ReLU activation is used after each convolutional layer, and Dropout is applied
         for regularization to prevent overfitting.
 
     Example:
@@ -80,25 +80,25 @@ class Model_LRN(torch.nn.Module):
         super().__init__()
         self.model_branch = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=3, out_channels=96, kernel_size=11, stride=1),
-            torch.nn.SELU(),
+            torch.nn.ReLU(),
             torch.nn.LocalResponseNorm(alpha=0.0001, beta=0.75, size=5, k=2),
-            torch.nn.SELU(),
+            torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
             torch.nn.Conv2d(in_channels=96, out_channels=256, kernel_size=5, stride=1, padding=2),
-            torch.nn.SELU(),
+            torch.nn.ReLU(),
             torch.nn.LocalResponseNorm(alpha=0.0001, beta=0.75, size=5, k=2),
-            torch.nn.SELU(),
+            torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
             torch.nn.Dropout2d(p=0.3),
             torch.nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, stride=1, padding=1),
-            torch.nn.SELU(),
+            torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=384, out_channels=256, kernel_size=3, stride=1, padding=1),
-            torch.nn.SELU(),
+            torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
             torch.nn.Dropout2d(p=0.3),
             torch.nn.Flatten(),
             torch.nn.Linear(in_features=108800, out_features=1024),
-            torch.nn.SELU(),
+            torch.nn.ReLU(),
             torch.nn.Dropout1d(p=0.5),
             torch.nn.Linear(in_features=1024, out_features=128)
         )
