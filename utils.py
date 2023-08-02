@@ -108,24 +108,23 @@ class SiameseDataset(Dataset):
     """
     def __init__(self, labels_csv:str, image_dir:str, transforms:transforms=None) -> None:
         super().__init__()
-        self.labels_csv = pd.read_csv(labels_csv)
+        self.labels = pd.read_csv(labels_csv, index_col=False)
         self.image_dir = image_dir
         self.transform = transforms
 
     def __getitem__(self, index):
-        image1_path = os.path.join(self.image_dir, self.labels_csv.iat[index, 0])
-        image2_path = os.path.join(self.image_dir, self.labels_csv.iat[index, 1])
-        label = torch.Tensor(self.labels_csv.iat[index,2])
-
+        image1_path = os.path.join(self.image_dir, str(self.labels.iat[index, 1]))
+        image2_path = os.path.join(self.image_dir, str(self.labels.iat[index, 2]))
+        label = torch.tensor(self.labels.iat[index,3])
+        
         image1 = Image.open(image1_path).convert("L")
         image2 = Image.open(image2_path).convert("L")
 
-        if self.transform:
+        if self.transform is not None:
             image1 = self.transform(image1)
             image2 = self.transform(image2)        
 
         return image1, image2, label
     
     def __len__(self):
-        print()
-        return len(self.labels_csv)
+        return len(self.labels)
