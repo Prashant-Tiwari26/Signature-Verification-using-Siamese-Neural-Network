@@ -1,15 +1,17 @@
 import os
 import torch
+import numpy as np
 import pandas as pd
 from PIL import Image
+import matplotlib.pyplot as plt
+from PIL.ImageOps import invert
 from torchvision.datasets import ImageFolder
 from torchvision.transforms import transforms
 from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision.transforms import Compose, Resize, ToTensor, Normalize, InterpolationMode
-from PIL.ImageOps import invert
 
-transform = Compose([
-    invert(),
+transform = transforms.Compose([
+    invert,
     ToTensor(),
     Resize((155,220), interpolation=InterpolationMode.BICUBIC),
     Normalize(mean=0.5, std=0.5)
