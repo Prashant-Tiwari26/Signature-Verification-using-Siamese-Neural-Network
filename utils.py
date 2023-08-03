@@ -2,6 +2,8 @@ import os
 import torch
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+from timeit import default_timer as timer
 from PIL import Image
 import matplotlib.pyplot as plt
 from PIL.ImageOps import invert
@@ -63,7 +65,8 @@ class ContrastiveLoss(torch.nn.Module):
             This function computes the contrastive loss for a pair of embeddings based on their distance and similarity
             label. The loss aims to pull similar pairs closer together and push dissimilar pairs apart in the embedding space.
         """
-        return y*torch.pow(torch.tensor(dist), 2) + (1-y)*torch.pow(torch.max(torch.tensor([self.margin-dist, 0])), 2)
+        loss = y * torch.pow(dist, 2) + (1 - y) * torch.pow(torch.clamp(self.margin - dist, min=0), 2)
+        return loss.mean()
     
 class SiameseDataset(Dataset):
     """
@@ -128,3 +131,89 @@ class SiameseDataset(Dataset):
     
     def __len__(self):
         return len(self.labels)
+    
+def TrainLoop(
+        model:torch.nn.Module,
+        optimizer:torch.optim.Optimizer,
+        loss_function:torch.nn.Module,
+        num_epochs:int,
+        scheduler:torch.optim.lr_scheduler.StepLR,
+        train_dataloader:torch.utils.data.DataLoader,
+        test_dataloader:torch.utils.data.DataLoader,
+        early_stopping_rounds:int,
+        val_dataloader:torch.utils.data.DataLoader=None,
+        device:str='cpu'
+):
+    """
+    TrainLoop function for training a PyTorch neural network model using the specified data and settings.
+
+    Parameters:
+        model (torch.nn.Module): The PyTorch neural network model to be trained.
+        optimizer (torch.optim.Optimizer): The optimizer used for updating model parameters during training.
+        loss_function (torch.nn.Module): The loss function used to compute the training and validation loss.
+        num_epochs (int): The number of epochs to train the model for.
+        scheduler (torch.optim.lr_scheduler): Learning rate scheduler for the optimizer.
+        train_dataloader (torch.utils.data.DataLoader): DataLoader for the training dataset.
+        test_dataloader (torch.utils.data.DataLoader): DataLoader for the test dataset (used for early stopping).
+        early_stopping_rounds (int): Number of epochs to wait before stopping training if there is no improvement in validation loss.
+        val_dataloader (torch.utils.data.DataLoader, optional): DataLoader for the validation dataset. Default is None.
+        device (str, optional): Device to use for training (e.g., 'cpu' or 'cuda'). Default is 'cpu'.
+
+    Returns:
+        None: This function does not return any value. It trains the model and prints the progress.
+
+    Note:
+        - The model, optimizer, loss function, and scheduler should be properly initialized before calling this function.
+        - The train and validation dataloaders should provide batches of data in the format (x1, x2, y), where x1 and x2 are input tensors and y is the target tensor.
+        - The test dataloader is used for early stopping based on validation loss. If early stopping is not required, set `test_dataloader` to None.
+        - The model will be moved to the specified `device` before training.
+        - This function uses tqdm for displaying the training progress.
+    """
+    model.to(device)
+    start_time = timer()
+    best_val_loss = float('inf')
+    epochs_without_improvement = 0
+    train_loss = 0
+    for epoch in tqdm(range(num_epochs)):
+        print(f"Epoch : {epoch}\n----------------------")
+        for batch, (x1, x2, y) in enumerate(train_dataloader):
+            x1.to(device)
+            x2.to(device)
+            y.to(device)
+            optimizer.zero_grad()
+            distance = model(x1, x2)
+            loss = loss_function(distance, y)
+            loss.backward()
+            optimizer.step()
+            print(f"Loss for batch: {batch} = {loss}")
+            train_loss += loss
+
+        print(f"Training Loss = {train_loss}")
+
+        if val_dataloader is not None:
+            model.eval()
+            validation_loss = 0
+            with torch.inference_mode():
+                for x1, x2, y in val_dataloader:
+                    distance = model(x1,x2)
+                    loss = loss_function(distance, y)
+                    validation_loss+=loss
+
+                if validation_loss < best_val_loss:
+                    best_val_loss = validation_loss
+                    epochs_without_improvement = 0
+                else:
+                    epochs_without_improvement+=1
+
+                print(f"Current Validation Loss = {validation_loss}")
+                print(f"Best Validation Loss = {best_val_loss}")
+                print(f"Epochs without Improvement = {epochs_without_improvement}")
+
+                if epochs_without_improvement > early_stopping_rounds:
+                    print("Early Stoppping Triggered")
+                    break
+
+        scheduler.step()
+
+    end_time = timer()
+    print(f"Training Time = {end_time-start_time} seconds")

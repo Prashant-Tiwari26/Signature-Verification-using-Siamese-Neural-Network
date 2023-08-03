@@ -79,7 +79,7 @@ class Model_LRN(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.model_branch = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=3, out_channels=96, kernel_size=11, stride=1),
+            torch.nn.Conv2d(in_channels=1, out_channels=96, kernel_size=11, stride=1),
             torch.nn.ReLU(),
             torch.nn.LocalResponseNorm(alpha=0.0001, beta=0.75, size=5, k=2),
             torch.nn.ReLU(),
@@ -197,7 +197,7 @@ class Model_BN(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.model_branch = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=3, out_channels=96, kernel_size=11, stride=1),
+            torch.nn.Conv2d(in_channels=1, out_channels=96, kernel_size=11, stride=1),
             torch.nn.SELU(),
             torch.nn.BatchNorm2d(num_features=96),
             torch.nn.SELU(),
