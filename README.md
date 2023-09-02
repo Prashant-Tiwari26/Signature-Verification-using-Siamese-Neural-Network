@@ -76,7 +76,7 @@ Non-trainable params: 0<br>
 
 ### For the improved model
 The Model Architecture is as follows:<br><br>
-Model_LRN(<br>
+Model_BN(<br>
   (model_branch): Sequential(<br>
     (0): Conv2d(3, 96, kernel_size=(11, 11), stride=(1, 1))<br>
     (1): SELU()<br>
