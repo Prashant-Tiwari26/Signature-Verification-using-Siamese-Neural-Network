@@ -55,8 +55,7 @@ class ContrastiveLoss(torch.nn.Module):
 
         Args:
             dist (torch.Tensor): The Euclidean distance between two embeddings.
-            y (torch.Tensor): The binary label indicating the similarity between the embeddings
-                              (1 for similar pairs, 0 for dissimilar pairs).
+            y (torch.Tensor): The binary label indicating the similarity between the embeddings (1 for similar pairs, 0 for dissimilar pairs).
 
         Returns:
             torch.Tensor: The contrastive loss value.
@@ -116,9 +115,9 @@ class SiameseDataset(Dataset):
         self.transform = transforms
 
     def __getitem__(self, index):
-        image1_path = os.path.join(self.image_dir, str(self.labels.iat[index, 1]))
-        image2_path = os.path.join(self.image_dir, str(self.labels.iat[index, 2]))
-        label = torch.tensor(self.labels.iat[index,3])
+        image1_path = os.path.join(self.image_dir, str(self.labels.iat[index, 0]))
+        image2_path = os.path.join(self.image_dir, str(self.labels.iat[index, 1]))
+        label = torch.tensor(self.labels.iat[index,2])
         
         image1 = Image.open(image1_path).convert("L")
         image2 = Image.open(image2_path).convert("L")
@@ -139,10 +138,10 @@ def TrainLoop(
         num_epochs:int,
         scheduler:torch.optim.lr_scheduler.StepLR,
         train_dataloader:torch.utils.data.DataLoader,
-        test_dataloader:torch.utils.data.DataLoader,
         early_stopping_rounds:int,
+        test_dataloader:torch.utils.data.DataLoader=None,
         val_dataloader:torch.utils.data.DataLoader=None,
-        device:str='cpu'
+        device:str='cuda'
 ):
     """
     TrainLoop function for training a PyTorch neural network model using the specified data and settings.
@@ -177,9 +176,9 @@ def TrainLoop(
     for epoch in tqdm(range(num_epochs)):
         print(f"Epoch : {epoch}\n----------------------")
         for batch, (x1, x2, y) in enumerate(train_dataloader):
-            x1.to(device)
-            x2.to(device)
-            y.to(device)
+            x1 = x1.to(device)
+            x2 = x2.to(device)
+            y = y.to(device)
             optimizer.zero_grad()
             distance = model(x1, x2)
             loss = loss_function(distance, y)
@@ -195,6 +194,9 @@ def TrainLoop(
             validation_loss = 0
             with torch.inference_mode():
                 for x1, x2, y in val_dataloader:
+                    x1 = x1.to(device)
+                    x2 = x2.to(device)
+                    y = y.to(device)
                     distance = model(x1,x2)
                     loss = loss_function(distance, y)
                     validation_loss+=loss
