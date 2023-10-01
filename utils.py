@@ -281,7 +281,7 @@ def TrainLoopV2(
     best_model_weights = model.state_dict()
 
     for epoch in tqdm(range(num_epochs)):
-        print(f"Epoch : {epoch}\n----------------------")
+        print(f"\nEpoch : {epoch}\n----------------------")
         train_loss = 0
         for batch, (x1, x2, y) in enumerate(train_dataloader):
             x1 = x1.to(device)
