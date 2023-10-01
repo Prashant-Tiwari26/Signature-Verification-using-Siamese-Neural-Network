@@ -199,3 +199,5 @@ The model can be used for verify offline signatures by simply clicking their pic
 All dependencies can be installed by running the following command in the terminal:
 
 > pip install -r requirements.txt
+
+> Note: The model is available here due to it being over 100 MB, [click here](https://drive.google.com/file/d/1gjx1hrzSbs1s7bcDpr4rg2Dw7EkNxd7H/view?usp=drive_link) if you need it.
