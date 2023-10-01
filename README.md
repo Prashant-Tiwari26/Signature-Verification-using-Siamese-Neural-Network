@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is an implementation of an improved version of the model SigNet given in the paper:
+This project is an implementation of an smaller model that is inspired from model SigNet given in the paper:
 [*Dey, S., Dutta, A., Toledo, J. I., Ghosh, S. K., Lladós, J., & Pal, U. (2017). Signet: Convolutional siamese network for writer independent offline signature verification. arXiv preprint arXiv:1707.02131.*](https://arxiv.org/pdf/1707.02131.pdf) It uses siamese neural network structure with two parallel CNNs to verify if a signature is a forgery or not.
 
 ## Table of Contents
@@ -39,6 +39,10 @@ This dataset contains the signature of 124 users both genuine and fraud signatur
 <br><br>
 Link for [*Dataset*](https://www.kaggle.com/datasets/mallapraveen/signature-matching)
 
+### Data used for training
+
+Due to limited computation power I have trimmed the custom dataset down to 40% of its original size and then used it for training, validation and testing purposes. The code to do so is given in `Scripts/data_split.py`
+
 ## Model Architecture
 
 ### For SigNet
@@ -68,7 +72,7 @@ Model_LRN(<br>
     (20): Dropout1d(p=0.5, inplace=False)<br>
     (21): Linear(in_features=1024, out_features=128, bias=True)<br>
   )<br>
-)<br><br>
+)<br>
 
 Total params: 113,963,840<br>
 Trainable params: 113,963,840<br>
@@ -101,8 +105,45 @@ Model_BN(<br>
     (20): Dropout1d(p=0.5, inplace=False)<br>
     (21): Linear(in_features=1024, out_features=128, bias=True)<br>
   )<br>
-)<br><br>
+)<br>
 
 Total params: 113,963,840<br>
 Trainable params: 113,963,840<br>
+Non-trainable params: 0<br>
+
+
+### For smaller model
+The Model Architecture is as follows:<br><br>
+Model_BN_s(<br>
+  (model_branch): Sequential(<br>
+    (0): Conv2d(3, 96, kernel_size=(11, 11), stride=(1, 1))<br>
+    (1): SELU()<br>
+    (2): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)<br>
+    (3): SELU()<br>
+    (4): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)<br>
+    (5): Conv2d(96, 256, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2))<br>
+    (6): SELU()<br>
+    (7): BatchNorm2d(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),<br>
+    (8): SELU()<br>
+    (9): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)<br>
+    (10): Dropout2d(p=0.3, inplace=False)<br>
+    (11): Conv2d(256, 384, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))<br>
+    (12): SELU()<br>
+    (13): Conv2d(384, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))<br>
+    (14): SELU()<br>
+    (15): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)<br>
+    (16): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))<br>
+    (17): SELU()<br>
+    (18): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)<br>
+    (19): Dropout2d(p=0.3, inplace=False)<br>
+    (20): Flatten(start_dim=1, end_dim=-1)<br>
+    (21): Linear(in_features=24576, out_features=1024, bias=True)<br>
+    (22): SELU()<br>
+    (23): Dropout1d(p=0.5, inplace=False)<br>
+    (24): Linear(in_features=1024, out_features=128, bias=True)<br>
+  )<br>
+)<br>
+
+Total params: 28,285,312<br>
+Trainable params: 28,285,312<br>
 Non-trainable params: 0<br>
