@@ -15,7 +15,6 @@ This project is an implementation of an smaller model that is inspired from mode
 + Evaluation
 + Usage
 + Dependencies
-+ Acknowledgments
 
 ## Datasets
 
@@ -147,3 +146,56 @@ Model_BN_s(<br>
 Total params: 28,285,312<br>
 Trainable params: 28,285,312<br>
 Non-trainable params: 0<br>
+
+## Preprocessing
+
+* The custom class for dataset to be used for this project has been given `utils.py` by the name *SiameseDataset*.
+* The transform function that applies to each image is also in `utils.py` and is as follows:
+  ```
+  transforms.Compose([
+      invert,
+      ToTensor(),
+      Resize((155,220), interpolation=InterpolationMode.BICUBIC),
+      Normalize(mean=0.5, std=0.5)
+  ])
+  ```
+  - It inverts the image so that background of each image has 0 values.
+  - Converts it to tensor for model training.
+  - Resizes image using Bicubic Interpolation to better preserve the detail although you can also use Bilinear Interpolation.
+  - Normalizes and standardizes the image.
+
+## Training
+
+* The model has been trained on a trimmed down dataset of 20,884 entries with a validation set of 2984 entries.
+* The architecture of models is given in `Models/models.py`
+* The training script is given in `Scripts/train_bn_s.py`
+* The code for training loop is given in `utils.py`
+* Model has been trained using *NAdam optimizer* for 20 epochs with an initial learning rate of 1e-4 and weight decay of 5e-4.
+* After 10 epochs the learning rate drops down to 10% of starting learning rate.
+* Custom Contrastive Loss function has been used which is availabe in `utils.py`  
+
+## Evaluation
+
+* The model has been tested on testing data by setting a threshold value of 0.5 for the euclidean distance, below it the signatures are authentic, above it there's a forgery. The code for this task is given in `Scripts/testing.py`
+
+* The code for final evaluation is given in `Scripts/evaluation.py` which calculates accuracy, classification report as well as Confusion matrix and ROC curve plot.
+
+### The Confusion matrix 
+![Alt text](Data/custom/Performance/confusionmatrix.png)
+
+### ROC Curve
+![Alt text](Data/custom/Performance/roccurve.png)
+
+The model achieves 100% performance on the dataset overall.
+
+> The training and testing on other datasets will be done later on.
+
+## Usage
+
+The model can be used for verify offline signatures by simply clicking their picture wherever needed.
+
+## Dependencies
+
+All dependencies can be installed by running the following command in the terminal:
+
+> pip install -r requirements.txt
