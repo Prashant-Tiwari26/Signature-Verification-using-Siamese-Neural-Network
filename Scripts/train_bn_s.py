@@ -40,7 +40,7 @@ def TrainModel():
     TrainLoopV2(bn_model_custom, optimizer_bn, ContrastiveLoss(), 20, scheduler_bn, TrainDataloader, ValDataloader, 5)
 
     model_path = "Models/bn_s.pth"
-    torch.save(Model_BN_s, model_path)
+    torch.save(bn_model_custom, model_path)
 
 if __name__ == '__main__':
     TrainModel()

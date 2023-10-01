@@ -285,18 +285,18 @@ class Model_BN_s(torch.nn.Module):
         Conv2d-14               [batch_size, 256, 51, 35]          884,992
         SELU-15                 [batch_size, 256, 51, 35]                0
         MaxPool2d-16            [batch_size, 256, 25, 17]                0
-        Conv2d-17               [batch_size, 192, 17, 25]          590,080
-        SELU-18                 [batch_size, 192, 17, 25]                0
-        MaxPool2d-19            [batch_size, 192, 8, 12]                 0
-        Dropout2d-20            [batch_size, 192, 8, 12]                 0
-        Flatten-21              [batch_size, 18432]                      0
+        Conv2d-17               [batch_size, 256, 17, 25]          590,080
+        SELU-18                 [batch_size, 256, 17, 25]                0
+        MaxPool2d-19            [batch_size, 256, 8, 12]                 0
+        Dropout2d-20            [batch_size, 256, 8, 12]                 0
+        Flatten-21              [batch_size, 24576]                      0
         Linear-22               [batch_size, 1024]              25,166,848
         SELU-23                 [batch_size, 1024]                       0
         Dropout1d-24            [batch_size, 1024]                       0
         Linear-25               [batch_size, 128]                  131,200
         ===================================================================
-        Total params: 21,846,336
-        Trainable params: 21,846,336
+        Total params: 28,285,312
+        Trainable params: 28,285,312
         Non-trainable params: 0
         -------------------------------------------------------------------
 
