@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import seaborn as sns
 from timeit import default_timer as timer
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -219,3 +220,88 @@ def TrainLoop(
 
     end_time = timer()
     print(f"Training Time = {end_time-start_time} seconds")
+
+def TrainLoopV2(
+        model:torch.nn.Module,
+        optimizer:torch.optim.Optimizer,
+        loss_function:torch.nn.Module,
+        num_epochs:int,
+        scheduler:torch.optim.lr_scheduler.StepLR,
+        train_dataloader:torch.utils.data.DataLoader,
+        val_dataloader:torch.utils.data.DataLoader,
+        early_stopping_rounds:int,
+        device:str='cuda',
+        return_best_model:bool=True
+):
+    model.to(device)
+    best_val_loss = float('inf')
+    epochs_without_improvement = 0
+    total_train_loss = []
+    total_val_loss = []
+    best_model_weights = model.state_dict()
+
+    for epoch in tqdm(range(num_epochs)):
+        print(f"Epoch : {epoch}\n----------------------")
+        train_loss = 0
+        for batch, (x1, x2, y) in enumerate(train_dataloader):
+            x1 = x1.to(device)
+            x2 = x2.to(device)
+            y = y.to(device)
+            optimizer.zero_grad()
+            distance = model(x1, x2)
+            loss = loss_function(distance, y)
+            train_loss += loss
+            loss.backward()
+            optimizer.step()
+            print(f"Loss for batch {batch} = {loss}")
+
+        print("\nTraining Loss for epoch {} = {}\n".format(epoch, train_loss))
+        total_train_loss.append(train_loss/len(train_dataloader.dataset))
+
+        model.eval()
+        validation_loss = 0
+        with torch.inference_mode():
+            for x1, x2, y in val_dataloader:
+                x1 = x1.to(device)
+                x2 = x2.to(device)
+                y = y.to(device)
+                distance = model(x1,x2)
+                loss = loss_function(distance, y)
+                validation_loss+=loss
+
+            if validation_loss < best_val_loss:
+                best_val_loss = validation_loss
+                epochs_without_improvement = 0
+                best_model_weights = model.state_dict()
+            else:
+                epochs_without_improvement+=1
+
+            print(f"Current Validation Loss = {validation_loss}")
+            print(f"Best Validation Loss = {best_val_loss}")
+            print(f"Epochs without Improvement = {epochs_without_improvement}")
+
+        total_val_loss.append(validation_loss/len(val_dataloader.dataset))
+        if epochs_without_improvement >= early_stopping_rounds:
+            print("Early Stoppping Triggered")
+            break
+
+        scheduler.step()
+
+    if return_best_model == True:
+        model.load_state_dict(best_model_weights)
+
+    total_train_loss = [item.cpu().detach().numpy() for item in total_train_loss]
+    total_val_loss = [item.cpu().detach().numpy() for item in total_val_loss]
+
+    x = np.arange(len(total_train_loss))
+
+    sns.set_style('whitegrid')
+    plt.figure(figsize=(14,5))
+    sns.lineplot(x=x, y=total_train_loss, label='Training Loss')
+    sns.lineplot(x=x, y=total_val_loss, label='Validation Loss')
+    plt.title("Loss over {} Epochs".format(len(total_train_loss)))
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.xticks(x)
+
+    plt.show()
