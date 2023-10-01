@@ -233,6 +233,46 @@ def TrainLoopV2(
         device:str='cuda',
         return_best_model:bool=True
 ):
+    """
+    Training loop for a deep learning model with optional early stopping.
+
+    Args:
+        model (torch.nn.Module): The neural network model to train.
+        optimizer (torch.optim.Optimizer): The optimizer used for training.
+        loss_function (torch.nn.Module): The loss function used for training.
+        num_epochs (int): The number of training epochs.
+        scheduler (torch.optim.lr_scheduler.StepLR): Learning rate scheduler.
+        train_dataloader (torch.utils.data.DataLoader): DataLoader for training data.
+        val_dataloader (torch.utils.data.DataLoader): DataLoader for validation data.
+        early_stopping_rounds (int): Number of consecutive epochs without improvement on the validation loss to trigger early stopping.
+        device (str, optional): Device to use for training (e.g., 'cuda' or 'cpu'). Default is 'cuda'.
+        return_best_model (bool, optional): Whether to return the model with the best validation loss. Default is True.
+
+    Returns:
+        None: If `return_best_model` is False.
+        torch.nn.Module: The trained model with the best validation loss if `return_best_model` is True.
+    
+    The function trains the specified `model` using the provided `optimizer` and
+    `loss_function` for the specified number of `num_epochs`. It monitors the
+    validation loss and performs early stopping if the validation loss does not
+    improve for a specified number of consecutive epochs (controlled by
+    `early_stopping_rounds`). The best model (lowest validation loss) is optionally
+    returned based on the `return_best_model` parameter.
+
+    During training, the function prints and records training and validation losses
+    for each epoch and plots a graph showing the loss evolution.
+
+    Example:
+    ```
+    model = MyModel()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    loss_function = torch.nn.MSELoss()
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+    train_dataloader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=64)
+    best_model = TrainLoopV2(model, optimizer, loss_function, 50, scheduler, train_dataloader, val_dataloader, 5)
+    ```
+    """
     model.to(device)
     best_val_loss = float('inf')
     epochs_without_improvement = 0

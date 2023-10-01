@@ -1,3 +1,36 @@
+"""
+Script for splitting a dataset into training, validation, and test sets and saving them as CSV files.
+
+This script reads a CSV file named 'data.csv' from the 'Data/custom/' directory,
+performs a series of data splits, and saves the resulting splits as CSV files.
+The splits are stratified, ensuring that the distribution of the target variable '2'
+is maintained in each split.
+
+The data splits are as follows:
+- The original dataset is split into 'train' and 'test' sets with an 80/20 ratio.
+- The 'train' set is further split into 'train', 'validation', and 'unused' sets
+  with an 80/10/10 ratio.
+- A subset of the 'train' set called 'used' is created, and it is split into
+  'train', 'validation', and 'test' sets with an 80/10/10 ratio.
+
+The resulting splits are saved as CSV files:
+- 'train_data.csv': Original training data split.
+- 'test_data.csv': Original test data split.
+- 'val_data.csv': Original validation data split.
+- 'train.csv': Used training data split.
+- 'test.csv': Used test data split.
+- 'val.csv': Used validation data split.
+
+Usage:
+- Place a CSV file named 'data.csv' in the 'Data/custom/' directory with the
+  target variable '2'.
+- Execute this script to perform the data splits and save the resulting CSV files.
+
+Note:
+Ensure that the required libraries (pandas and scikit-learn) are installed
+to run this script successfully.
+"""
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
