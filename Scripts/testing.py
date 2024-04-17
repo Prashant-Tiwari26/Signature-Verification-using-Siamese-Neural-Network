@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore")
 
 sys.path.append("C:\College\Projects\Signature Verification using Siamese Neural Network")
 from utils import transform, SiameseDataset
-from Models.models import Model_BN_s
+from utils.models import Model_BN_s
 
 def Predict():
     data = SiameseDataset("Data/custom/used data/test.csv", "Data/custom/full", transforms=transform)

@@ -23,8 +23,9 @@ warnings.filterwarnings("ignore")
 
 import sys
 sys.path.append("C:\College\Projects\Signature Verification using Siamese Neural Network")
-from Models.models import Model_BN_s
-from utils import ContrastiveLoss, transform, SiameseDataset, TrainLoopV2
+from utils.models import Model_BN_s
+from utils.data import SiameseDataset
+from utils.train import ContrastiveLoss, transform, TrainLoopV2
 
 def TrainModel():
     bn_model_custom = Model_BN_s()
