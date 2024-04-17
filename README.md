@@ -176,7 +176,7 @@ Non-trainable params: 0<br>
 
 ## Evaluation
 
-* The model has been tested on testing data by setting a threshold value of 0.5 for the euclidean distance, below it the signatures are authentic, above it there's a forgery. The code for this task is given in `Scripts/testing.py`
+* The model has been tested on testing data by setting a threshold value of 0.5 for the euclidean distance, below it the signatures are authentic, above it there is a forgery. The code for this task is given in `Scripts/testing.py`
 
 * The code for final evaluation is given in `Scripts/evaluation.py` which calculates accuracy, classification report as well as Confusion matrix and ROC curve plot.
 
