@@ -2,69 +2,83 @@ import os
 import torch
 import pandas as pd
 from PIL import Image
+from PIL.ImageOps import invert
 from torch.utils.data import Dataset
+from torchvision.transforms import v2, InterpolationMode
 
 class SiameseDataset(Dataset):
     """
-    Custom PyTorch Dataset for Siamese neural network training on image pairs.
+    Dataset for Siamese neural network training.
 
-    This dataset loads pairs of grayscale images and their corresponding labels from a CSV file. 
-    The CSV file should contain image file names of two files in each row along with a label 
-    (1 if the images are similar, 0 if they are not). The images are loaded from the specified 
-    'image_dir' directory.
+    Args:
+        labels_csv (str): Path to the CSV file containing labels.
+        image_dir (str): Path to the directory containing images.
+        resize (int | list): Desired size for resizing images. If an int is provided, images
+            will be resized to a square of this size. If a list is provided, it should contain
+            two integers representing width and height respectively.
+        train (bool, optional): Whether the dataset is for training or not. Defaults to True.
 
-    Parameters:
-        labels_csv (str): Path to the CSV file containing image pairs and their labels.
-        image_dir (str): Path to the directory containing the images.
-        transforms (transforms.Compose, optional): A composition of PyTorch transforms to be applied 
-            to the images. Default is None.
+    Attributes:
+        labels (DataFrame): DataFrame containing label information loaded from labels_csv.
+        image_dir (str): Path to the directory containing images.
+        transform (Compose): Composition of transformations to be applied to the images.
 
-    Returns:
-        tuple: A tuple containing two images (image1 and image2) and their corresponding label.
-            - image1 (torch.Tensor): The first grayscale image, converted to a PyTorch tensor.
-            - image2 (torch.Tensor): The second grayscale image, converted to a PyTorch tensor.
-            - label (torch.Tensor): The label indicating whether the images are similar (1) or not (0).
-    
-    Note:
-        - The CSV file should have three columns: 'image1', 'image2', and 'label'.
-        - The 'transforms' argument is an optional parameter that allows applying transformations 
-          to the images. The transformations should be a composition of transforms from the 
-          'torchvision.transforms' module. If not provided, the images will be returned as PIL Images.
-        - The images are loaded as grayscale ('L') images.
+    Methods:
+        __getitem__(self, index): Retrieves and preprocesses a pair of images along with their label.
+        __len__(self): Returns the total number of samples in the dataset.
+        get_transform(resize, train): Generates a composition of transformations based on the provided
+            parameters.
 
-    Example:
-        # Assuming you have a CSV file 'data.csv' and a folder 'images' containing the images
-        # Initialize the dataset with default transforms
-        data = SiameseDataset("data.csv", "images")
-
-        # Or, initialize the dataset with custom transforms
-        transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5], std=[0.5]),
-        ])
-        data = SiameseDataset("data.csv", "images", transform=transform)
     """
-    def __init__(self, labels_csv:str, image_dir:str, transforms=None) -> None:
+    def __init__(self, labels_csv: str, image_dir: str, resize: int | list, train: bool = True) -> None:
         super().__init__()
         self.labels = pd.read_csv(labels_csv, index_col=False)
         self.image_dir = image_dir
-        self.transform = transforms
+        self.transform = self.get_transform(resize, train)
 
     def __getitem__(self, index):
         image1_path = os.path.join(self.image_dir, str(self.labels.iat[index, 0]))
         image2_path = os.path.join(self.image_dir, str(self.labels.iat[index, 1]))
         label = torch.tensor(self.labels.iat[index,2])
-        
-        image1 = Image.open(image1_path).convert("L")
-        image2 = Image.open(image2_path).convert("L")
 
-        if self.transform is not None:
-            image1 = self.transform(image1)
-            image2 = self.transform(image2)        
+        image1 = invert(Image.open(image1_path).convert("L"))
+        image2 = invert(Image.open(image2_path).convert("L"))
+
+        image1, image2 = self.transform(image1, image2)        
 
         return image1, image2, label
     
     def __len__(self):
         return len(self.labels)
     
+    @staticmethod
+    def get_transform(resize: int | list, train: bool = True):
+        """
+        Generates a composition of transformations to be applied to the images.
+
+        Args:
+            resize (int | list): Desired size for resizing images.
+            train (bool, optional): Whether the transformation is for training or not. Defaults to True.
+
+        Returns:
+            Compose: Composition of transformations.
+
+        """
+        if type(resize) is list:
+            resize = (resize[0], resize[1])
+        else:
+            resize = (resize, resize)
+        transform = [
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Resize(resize, interpolation=InterpolationMode.BICUBIC, antialias=True),
+        ]
+        if train:
+            transform.extend([
+                v2.RandomHorizontalFlip(0.55),
+                v2.RandomVerticalFlip(0.55),
+                v2.RandomRotation(45, InterpolationMode.BILINEAR)
+            ])
+        transform.append(v2.Normalize(mean=[0.5], std=[0.5]))
+
+        return v2.Compose(transform)
