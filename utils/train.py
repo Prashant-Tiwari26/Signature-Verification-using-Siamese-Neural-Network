@@ -123,17 +123,11 @@ def train_loop(
         model.eval()
         validation_loss = 0
         with torch.inference_mode():
-            val_true_labels = []
-            val_pred_labels = []
             for x1, x2, y in val_dataloader:
                 x1, x2, y = x1.to(device), x2.to(device), y.to(device)
                 distance = model(x1,x2)
                 loss = loss_function(distance, y)
                 validation_loss+=loss
-                preds = (distance <= 0.5).to(torch.int)
-
-                val_true_labels.extend(y.cpu().numpy())
-                val_pred_labels.extend(preds.cpu().numpy())
 
             if validation_loss < best_val_loss:
                 best_val_loss = validation_loss
@@ -141,11 +135,6 @@ def train_loop(
                 best_model_weights = model.state_dict()
             else:
                 epochs_without_improvement+=1
-            
-            val_true_labels = np.array(val_true_labels)
-            val_pred_labels = np.array(val_pred_labels)
-            val_accuracy = accuracy_score(val_true_labels, val_pred_labels)
-            val_accuracies.append(val_accuracy)
 
             print(f"Current Validation Loss = {validation_loss}")
             print(f"Best Validation Loss = {best_val_loss}")
@@ -158,9 +147,9 @@ def train_loop(
             break
 
         try:
-            scheduler.step(validation_loss)
-        except:
             scheduler.step()
+        except:
+            scheduler.step(validation_loss)
 
     if return_best_model == True:
         model.load_state_dict(best_model_weights)
@@ -172,23 +161,17 @@ def train_loop(
     total_val_loss = np.array(total_val_loss)
     val_accuracies = np.array(val_accuracies)
 
-    fig, ax1 = plt.subplots(figsize=(10, 7.5))
-    sns.lineplot(x=range(len(total_train_loss)), y=total_train_loss, ax=ax1, label='Training Loss')
-    sns.lineplot(x=range(len(total_val_loss)), y=total_val_loss, ax=ax1, label='Validation Loss')
+    # fig, ax1 = plt.subplots(figsize=(10, 7.5))
+    plt.figure(figsize=(10,7.5), dpi=150)
+    sns.lineplot(x=range(len(total_train_loss)), y=total_train_loss, label='Training Loss')
+    sns.lineplot(x=range(len(total_val_loss)), y=total_val_loss, label='Validation Loss')
 
-    ax2 = ax1.twinx()
-
-    sns.lineplot(x=range(len(val_accuracies)), y=val_accuracies, ax=ax2, label='Validation Accuracy', color='g')
-
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('Loss')
-    ax2.set_ylabel('Accuracy')
-    ax1.legend(loc='upper left')
-    ax2.legend(loc='upper right')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend(loc='upper left')
     plt.title("Loss and accuracy during training")
     plt.subplots_adjust(wspace=0.3)
-    ax1.grid(True, linestyle='--')  
-    ax2.grid(False)
+    plt.grid(True, linestyle='--')
     plt.xticks(range(len(total_train_loss)), rotation=45)
     plt.savefig(fig_save_path, dpi=300, bbox_inches='tight')
     plt.show()
