@@ -45,16 +45,17 @@ def SplitData():
     test = pd.DataFrame(columns=['0', '1', '2', 'person'])
 
     for person in persons:
-        if len(train) < 63800:
+        if len(train) < 22000:      # * 63800 to use full dataset
             train = pd.concat([train, df_authentic[df_authentic['person'] == person]], axis=0)
             train = pd.concat([train, df_forgery[df_forgery['person'] == person]], axis=0)
-        elif len(test) < 14650:
+        elif len(test) < 5000:     # * 14650 to use full dataset
             test = pd.concat([test, df_authentic[df_authentic['person'] == person]], axis=0)
             test = pd.concat([test, df_forgery[df_forgery['person'] == person]], axis=0)
-        else:
+        elif len(val) < 2500:
             val = pd.concat([val, df_authentic[df_authentic['person'] == person]], axis=0)
             val = pd.concat([val, df_forgery[df_forgery['person'] == person]], axis=0)
-
+        else:
+            break
     del df_authentic, df_forgery
 
     print("Rows in training data = {}".format(len(train)))

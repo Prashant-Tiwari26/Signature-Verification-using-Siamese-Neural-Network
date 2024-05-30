@@ -1,14 +1,19 @@
 import torch
+import logging
 import numpy as np
 from tqdm import tqdm
-from dataclasses import dataclass
 import seaborn as sns
-from PIL.ImageOps import invert
 import matplotlib.pyplot as plt
 from timeit import default_timer as timer
-from sklearn.metrics import accuracy_score
-from torchvision.transforms import v2, InterpolationMode
-    
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(lineno)d - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
+
+logger = logging.getLogger(__name__)
+
 class ContrastiveLoss(torch.nn.Module):
     def __init__(self, margin: int = 1) -> None:
         """
@@ -104,7 +109,8 @@ def train_loop(
 
     for epoch in tqdm(range(num_epochs)):
         model.train()
-        print("\n---------------------\nEpoch {} | Learning Rate = {}".format(epoch, optimizer.param_groups[0]['lr']))
+        print("\n---------------------\n")
+        logger.info("Epoch {} | Learning Rate = {}".format(epoch, optimizer.param_groups[0]['lr']))
         train_loss = 0
         for i, (x1, x2, y) in enumerate(train_dataloader):
             x1, x2, y = x1.to(device), x2.to(device), y.to(device)
@@ -115,9 +121,9 @@ def train_loop(
             loss.backward()
             optimizer.step()
             if i % batch_loss == 0:
-                print("Loss for batch {} = {}".format(i, loss))
+                logger.info("Loss for batch {} = {}".format(i, loss))
 
-        print("\nTraining Loss for epoch {} = {}\n".format(epoch, train_loss))
+        logger.info("\nTraining Loss for epoch {} = {}\n".format(epoch, train_loss))
         total_train_loss.append(train_loss/len(train_dataloader.dataset))
 
         model.eval()
@@ -136,14 +142,14 @@ def train_loop(
             else:
                 epochs_without_improvement+=1
 
-            print(f"Current Validation Loss = {validation_loss}")
-            print(f"Best Validation Loss = {best_val_loss}")
-            print(f"Epochs without Improvement = {epochs_without_improvement}")
+            logger.info(f"Current Validation Loss = {validation_loss}")
+            logger.info(f"Best Validation Loss = {best_val_loss}")
+            logger.info(f"Epochs without Improvement = {epochs_without_improvement}")
 
         total_val_loss.append(validation_loss/len(val_dataloader.dataset))
         
         if epochs_without_improvement >= early_stopping_rounds:
-            print("Early Stoppping Triggered")
+            logger.warning("Early Stoppping Triggered")
             break
 
         try:
