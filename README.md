@@ -26,12 +26,6 @@ CEDAR signature database contains signatures of 55 signers belonging to various 
 <br><br>
 Link for [*Dataset*](https://www.kaggle.com/datasets/ishanikathuria/handwritten-signature-datasets)
 
-### BHSig260
-
-The BHSig260 signature dataset contains the signatures of 260 persons, among them 100 were signed in Bengali and 160 are signed in Hindi. Here also, for each of the signers, 24 genuine and 30 forged signatures are available. This results in 100 × 24 = 2400 genuine and 100 × 30 = 3000 forged signatures in Bengali, and 160 × 24 = 3840 genuine and 160×30 = 4800 forged signatures in Hindi.
-<br><br>
-Link for [*Dataset*](https://www.kaggle.com/datasets/ishanikathuria/handwritten-signature-datasets)
-
 ### Custom Dataset
 
 This dataset contains the signature of 124 users both genuine and fraud signature for signature verification. Each person has around 10 Genuine signatures which they made themselves and around 10 Forged signatures someone else made. All the data is extracted from ICDAR 2011 Signature Dataset and CEDAR Signature Verification Dataset.
@@ -40,7 +34,7 @@ Link for [*Dataset*](https://www.kaggle.com/datasets/mallapraveen/signature-matc
 
 ### Data used for training
 
-Due to limited computation power I have trimmed the custom dataset down to 40% of its original size and then used it for training, validation and testing purposes. The code to do so is given in `Scripts/data_split.py`
+Due to limited computation power I have trimmed the custom dataset down to 40% of its original size and then used it for training, validation and testing purposes.
 
 ## Model Architecture
 
@@ -77,7 +71,7 @@ Total params: 113,963,840<br>
 Trainable params: 113,963,840<br>
 Non-trainable params: 0<br>
 
-### For the improved model
+### For the model wit batch normalization
 The Model Architecture is as follows:<br><br>
 Model_BN(<br>
   (model_branch): Sequential(<br>
@@ -136,7 +130,7 @@ Model_BN_s(<br>
     (18): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)<br>
     (19): Dropout2d(p=0.3, inplace=False)<br>
     (20): Flatten(start_dim=1, end_dim=-1)<br>
-    (21): Linear(in_features=24576, out_features=1024, bias=True)<br>
+    (21): Linear(in_features=20480, out_features=1024, bias=True)<br>
     (22): SELU()<br>
     (23): Dropout1d(p=0.5, inplace=False)<br>
     (24): Linear(in_features=1024, out_features=128, bias=True)<br>
@@ -150,54 +144,103 @@ Non-trainable params: 0<br>
 ## Preprocessing
 
 * The custom class for dataset to be used for this project has been given `utils.py` by the name *SiameseDataset*.
-* The transform function that applies to each image is also in `utils.py` and is as follows:
-  ```
-  transforms.Compose([
-      invert,
-      ToTensor(),
-      Resize((155,220), interpolation=InterpolationMode.BICUBIC),
-      Normalize(mean=0.5, std=0.5)
-  ])
-  ```
-  - It inverts the image so that background of each image has 0 values.
-  - Converts it to tensor for model training.
-  - Resizes image using Bicubic Interpolation to better preserve the detail although you can also use Bilinear Interpolation.
-  - Normalizes and standardizes the image.
-
+* The transform function is added into the class as a function that converts image to torch tensors and resizes them.
+* If its part of train set then for data augmentation purposes randomized horizontal and vertical flips are also added.
 ## Training
 
 * The model has been trained on a trimmed down dataset of 20,884 entries with a validation set of 2984 entries.
-* The architecture of models is given in `Models/models.py`
-* The training script is given in `Scripts/train_bn_s.py`
-* The code for training loop is given in `utils.py`
-* Model has been trained using *NAdam optimizer* for 20 epochs with an initial learning rate of 1e-4 and weight decay of 5e-4.
-* After 10 epochs the learning rate drops down to 10% of starting learning rate.
-* Custom Contrastive Loss function has been used which is availabe in `utils.py`  
+* The architecture of models is given in `src/models/cnn.py`
+* The code for Model trainer class is given in `src/models/train.py`
+* Model has been trained using *AdamW optimizer* for 30 epochs with an initial learning rate of 3e-4.
+* For the first 15 epochs the learning rate reduces 15% per epoch.
+* Custom Contrastive Loss function has been used which is availabe in `src/utils/loss.py`  
 
 ## Evaluation
 
-* The model has been tested on testing data by setting a threshold value of 0.5 for the euclidean distance, below it the signatures are authentic, above it there is a forgery. The code for this task is given in `Scripts/testing.py`
+* The model has been tested on testing data by setting a euclidean distance threshold value of 0.15 for smaller version to model mentioned in original paper, 0.242 for shufflenet, below it the signatures are authentic, above it there is a forgery. The code for this task is given in `src/models/evaluate.py`
 
-* The code for final evaluation is given in `Scripts/evaluation.py` which calculates accuracy, classification report as well as Confusion matrix and ROC curve plot.
+### The Confusion matrices 
+![Alt text](reports\figures\custom_cf.png)
+![Alt text](reports\figures\shufflenet_cf.png)
 
-### The Confusion matrix 
-![Alt text](Data/custom/Performance/confusionmatrix.png)
+### Classification Report
 
-### ROC Curve
-![Alt text](Data/custom/Performance/roccurve.png)
+```
+For shufflenet
+{
+    "0": {
+        "precision": 0.9259771705292287,
+        "recall": 0.945268361581921,
+        "f1-score": 0.9355233269264371,
+        "support": 2832.0
+    },
+    "1": {
+        "precision": 0.942099364960777,
+        "recall": 0.9217836257309941,
+        "f1-score": 0.9318307777572511,
+        "support": 2736.0
+    },
+    "accuracy": 0.9337284482758621,
+    "macro avg": {
+        "precision": 0.9340382677450028,
+        "recall": 0.9335259936564575,
+        "f1-score": 0.9336770523418441,
+        "support": 5568.0
+    },
+    "weighted avg": {
+        "precision": 0.9338992833102481,
+        "recall": 0.9337284482758621,
+        "f1-score": 0.9337088846622681,
+        "support": 5568.0
+    }
+}
+```
 
-The model achieves 100% performance on the dataset overall.
+```
+For custom model
+{
+    "0": {
+        "precision": 0.9811937857726901,
+        "recall": 0.847457627118644,
+        "f1-score": 0.9094353921940129,
+        "support": 2832.0
+    },
+    "1": {
+        "precision": 0.8616271620755925,
+        "recall": 0.9831871345029239,
+        "f1-score": 0.9184021850460908,
+        "support": 2736.0
+    },
+    "accuracy": 0.9141522988505747,
+    "macro avg": {
+        "precision": 0.9214104739241413,
+        "recall": 0.915322380810784,
+        "f1-score": 0.9139187886200519,
+        "support": 5568.0
+    },
+    "weighted avg": {
+        "precision": 0.9224412206801508,
+        "recall": 0.9141522988505747,
+        "f1-score": 0.9138414886816719,
+        "support": 5568.0
+    }
+}
+```
 
+Shuffle Net model performs slightly better with much lower number of parameters(2.6 million compared to 28 million).
 > The training and testing on other datasets will be done later on.
 
 ## Usage
 
-The model can be used for verify offline signatures by simply clicking their picture wherever needed.
+The project can be run in three different ways:
+* To train only: ```python .\ train.yaml```
+* To evaluate only: ```python .\ eval.yaml```
+* To the do both as a pipeline: ```python .\ train.yaml eval.yaml```
+
+Adjust values of parameters in train  and eval config files accordingly. 
 
 ## Dependencies
 
 All dependencies can be installed by running the following command in the terminal:
 
-> pip install -r requirements.txt
-
-> Note: The model is not available here due to it being over 100 MB, [click here](https://drive.google.com/file/d/1gjx1hrzSbs1s7bcDpr4rg2Dw7EkNxd7H/view?usp=drive_link) if you need it.
+```pip install -r requirements.txt```

@@ -1,0 +1,13 @@
+task_type: 'train'
+model: 'shufflenet'
+img_dir: 'Data/custom/full'
+train_csv_path: 'Data/custom/train.csv'
+val_csv_path: 'Data/custom/val.csv'
+resize: 224
+num_epochs: 30
+batch_size: 32
+batch_loss: 50
+early_stopping_rounds: 6
+model_save_dir: 'models'
+training_loss_graph_path: 'reports/figures/shufflenet.png'
+learning_rate: 3e-4

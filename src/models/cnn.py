@@ -1,6 +1,7 @@
 import torch
-from torchvision.models.efficientnet import efficientnet_b0
-from torchvision.models.shufflenetv2 import shufflenet_v2_x1_5
+from torchvision.models.efficientnet import efficientnet_b0, EfficientNet_B0_Weights
+from torchvision.models.mobilenetv3 import mobilenet_v3_large, MobileNet_V3_Large_Weights
+from torchvision.models.shufflenetv2 import shufflenet_v2_x1_5, ShuffleNet_V2_X1_5_Weights
 
 class Model_LRN(torch.nn.Module):
     """
@@ -215,7 +216,7 @@ class Model_BN(torch.nn.Module):
             torch.nn.MaxPool2d(kernel_size=3, stride=2),
             torch.nn.Dropout2d(p=0.3),
             torch.nn.Flatten(),
-            torch.nn.Linear(in_features=108800, out_features=1024),
+            torch.nn.Linear(in_features=160000, out_features=1024),
             torch.nn.SELU(),
             torch.nn.Dropout1d(p=0.5),
             torch.nn.Linear(in_features=1024, out_features=128)
@@ -346,10 +347,10 @@ class Model_BN_s(torch.nn.Module):
             torch.nn.Linear(in_features=1024, out_features=128)
         )
         self.apply(self._init_weights)
-        print("\nNumber of Parameters = {:,}".format(self._get_num_params()))
+    #     print("\nNumber of Parameters = {:,}".format(self._get_num_params()))
 
-    def _get_num_params(self):
-        return sum(p.numel() for p in self.parameters())
+    # def _get_num_params(self):
+    #     return sum(p.numel() for p in self.parameters())
     
     def _init_weights(self, module):
         if isinstance(module, torch.nn.Conv2d):
@@ -381,39 +382,6 @@ class Model_BN_s(torch.nn.Module):
         y_genuine = self.model_branch(x_genuine)
         y_test = self.model_branch(x_test)
         return torch.nn.functional.pairwise_distance(y_genuine, y_test)
-    
-
-class efficientnet_model(torch.nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-        self.model = efficientnet_b0()
-        self.model.features[0][0] = torch.nn.Conv2d(1, 32, 3, 2, 1, bias=False)
-        self.model.classifier[1] = torch.nn.Linear(1280, 128)
-        self.apply(self._init_weights)
-        print("\nNumber of Parameters = {:,}".format(self._get_num_params()))
-
-    def _get_num_params(self):
-        return sum(p.numel() for p in self.parameters())
-    
-    def _init_weights(self, module):
-        if isinstance(module, torch.nn.Conv2d):
-            for name, param in module.named_parameters():
-                if 'weight' in name:
-                    torch.nn.init.normal_(param, mean=0.0, std=0.01)
-                elif 'bias' in name:
-                    torch.nn.init.zeros_(param)
-        elif isinstance(module, torch.nn.Linear):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.01)
-            if module.bias is not None:
-                torch.nn.init.zeros_(module.bias)
-        elif isinstance(module, torch.nn.BatchNorm2d):
-            torch.nn.init.constant_(module.weight, 1)
-            torch.nn.init.zeros_(module.bias)
-
-    def forward(self, x_genuine, x_test):
-        y_genuine = self.model(x_genuine)
-        y_test = self.model(x_test)
-        return torch.nn.functional.pairwise_distance(y_genuine, y_test)
 
 
 class shufflenet_model(torch.nn.Module):
@@ -423,10 +391,10 @@ class shufflenet_model(torch.nn.Module):
         self.model.conv1[0] = torch.nn.Conv2d(1, 24, 3, 2, 1, bias=False)
         self.model.fc = torch.nn.Linear(1024, 128)
         self.apply(self._init_weights)
-        print("\nNumber of Parameters = {:,}".format(self._get_num_params()))
+    #     print("\nNumber of Parameters = {:,}".format(self._get_num_params()))
 
-    def _get_num_params(self):
-        return sum(p.numel() for p in self.parameters())
+    # def _get_num_params(self):
+    #     return sum(p.numel() for p in self.parameters())
     
     def _init_weights(self, module):
         if isinstance(module, torch.nn.Conv2d):
@@ -447,3 +415,10 @@ class shufflenet_model(torch.nn.Module):
         y_genuine = self.model(x_genuine)
         y_test = self.model(x_test)
         return torch.nn.functional.pairwise_distance(y_genuine, y_test)
+
+    
+MODELS = {
+    'shufflenet': shufflenet_model(),
+    'custom': Model_BN_s(),
+    'custom_large': Model_BN()
+}
