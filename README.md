@@ -151,17 +151,17 @@ Non-trainable params: 0<br>
 * The model has been trained on a trimmed down dataset of 20,884 entries with a validation set of 2984 entries.
 * The architecture of models is given in `src/models/cnn.py`
 * The code for Model trainer class is given in `src/models/train.py`
-* Model has been trained using *AdamW optimizer* for 30 epochs with an initial learning rate of 3e-4.
+* Model has been trained using *AdamW optimizer* for 30 epochs with an initial learning rate of 3e-4 and early if loss does not improve for 6 epochs.
 * For the first 15 epochs the learning rate reduces 15% per epoch.
-* Custom Contrastive Loss function has been used which is availabe in `src/utils/loss.py`  
+* Custom Contrastive Loss function has been used which is availabe in `src/utils/loss.py`
 
 ## Evaluation
 
 * The model has been tested on testing data by setting a euclidean distance threshold value of 0.15 for smaller version to model mentioned in original paper, 0.242 for shufflenet, below it the signatures are authentic, above it there is a forgery. The code for this task is given in `src/models/evaluate.py`
 
 ### The Confusion matrices 
-![Alt text](reports\figures\custom_cf.png)
-![Alt text](reports\figures\shufflenet_cf.png)
+![reports\figures\custom_cf.png](reports\figures\custom_cf.png)
+![reports\figures\shufflenet_cf.png](reports\figures\shufflenet_cf.png)
 
 ### Classification Report
 
