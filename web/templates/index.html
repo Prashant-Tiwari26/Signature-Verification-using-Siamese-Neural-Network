@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Signature Verification</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .upload-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .upload-box {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            width: 45%;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .images-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .image-preview {
+            width: 45%;
+            max-height: 300px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Signature Verification</h1>
+    
+    <div class="upload-container">
+        <div class="upload-box">
+            <h3>Original Signature</h3>
+            <input type="file" id="originalSignature" accept="image/*">
+        </div>
+        <div class="upload-box">
+            <h3>Signature to Verify</h3>
+            <input type="file" id="verificationSignature" accept="image/*">
+        </div>
+    </div>
+
+    <button onclick="verifySignatures()">Verify Signatures</button>
+
+    <div id="result"></div>
+    <div class="images-container">
+        <img id="originalPreview" class="image-preview" style="display:none;">
+        <img id="verificationPreview" class="image-preview" style="display:none;">
+    </div>
+
+    <script>
+        function verifySignatures() {
+            const originalSignature = document.getElementById('originalSignature').files[0];
+            const verificationSignature = document.getElementById('verificationSignature').files[0];
+            const resultDiv = document.getElementById('result');
+            const originalPreview = document.getElementById('originalPreview');
+            const verificationPreview = document.getElementById('verificationPreview');
+
+            if (!originalSignature || !verificationSignature) {
+                resultDiv.textContent = 'Please upload both signatures';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('original_signature', originalSignature);
+            formData.append('verification_signature', verificationSignature);
+
+            // Preview images
+            const originalReader = new FileReader();
+            originalReader.onload = (e) => {
+                originalPreview.src = e.target.result;
+                originalPreview.style.display = 'block';
+            };
+            originalReader.readAsDataURL(originalSignature);
+
+            const verificationReader = new FileReader();
+            verificationReader.onload = (e) => {
+                verificationPreview.src = e.target.result;
+                verificationPreview.style.display = 'block';
+            };
+            verificationReader.readAsDataURL(verificationSignature);
+
+            // Send verification request
+            axios.post('/verify', formData)
+                .then(response => {
+                    const { match, confidence } = response.data;
+                    resultDiv.textContent = match 
+                        ? `Signatures Match! Distance: ${(confidence).toFixed(4)}` 
+                        : `Signatures Do Not Match. Confidence: ${(confidence).toFixed(4)}`;
+                    resultDiv.style.color = match ? 'green' : 'red';
+                })
+                .catch(error => {
+                    resultDiv.textContent = `Error: ${error.response?.data?.error || 'Unknown error'}`;
+                    resultDiv.style.color = 'red';
+                });
+        }
+    </script>
+</body>
+</html>
