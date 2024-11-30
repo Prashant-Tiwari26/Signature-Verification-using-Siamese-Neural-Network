@@ -31,9 +31,10 @@ def lr_lambda(epoch):
 
 @dataclass
 class TrainingConfig:
-    model: Literal['shufflenet', 'custom', 'custom_large']
+    model: Literal['shufflenet', 'custom', 'mobilenet', 'custom_large']
     img_dir: str
     resize: int
+    crop_size: int
     train_csv_path: str
     val_csv_path: str
     num_epochs: int
@@ -64,8 +65,8 @@ class ModelTrainer:
         return sum(p.numel() for p in self.model.parameters())
     
     def __get_dataloaders(self):
-        train_data = SiameseDataset(self.config.train_csv_path, self.config.img_dir, self.config.resize)
-        val_data = SiameseDataset(self.config.val_csv_path, self.config.img_dir, self.config.resize, False)
+        train_data = SiameseDataset(self.config.train_csv_path, self.config.img_dir, self.config.resize, self.config.crop_size)
+        val_data = SiameseDataset(self.config.val_csv_path, self.config.img_dir, self.config.resize, self.config.crop_size, False)
         self.train_dataloader = DataLoader(train_data, self.config.batch_size, True)
         self.val_dataloader = DataLoader(val_data, self.config.batch_size, True)
         logger.info("No. of batches in training set = {}".format(len(self.train_dataloader)))

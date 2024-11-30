@@ -30,11 +30,11 @@ class SiameseDataset(Dataset):
             parameters.
 
     """
-    def __init__(self, labels_csv: str, image_dir: str, resize: int | list, train: bool = True) -> None:
+    def __init__(self, labels_csv: str, image_dir: str, resize: int | list, crop_size: int = None, train: bool = True) -> None:
         super().__init__()
         self.labels = pd.read_csv(labels_csv, index_col=False)
         self.image_dir = image_dir
-        self.transform = self.get_transform(resize, train)
+        self.transform = self.get_transform(resize, crop_size, train)
 
     def __getitem__(self, index):
         image1_path = os.path.join(self.image_dir, str(self.labels.iat[index, 0]))
@@ -52,7 +52,7 @@ class SiameseDataset(Dataset):
         return len(self.labels)
     
     @staticmethod
-    def get_transform(resize: int | list, train: bool = True):
+    def get_transform(resize: int | list, crop_size: int = None, train: bool = True):
         """
         Generates a composition of transformations to be applied to the images.
 
@@ -73,6 +73,8 @@ class SiameseDataset(Dataset):
             v2.ToDtype(torch.float32, scale=True),
             v2.Resize(resize, interpolation=InterpolationMode.BICUBIC, antialias=True),
         ]
+        if crop_size is not None:
+            transform.append(v2.CenterCrop(crop_size))
         if train:
             transform.extend([
                 v2.RandomHorizontalFlip(0.55),

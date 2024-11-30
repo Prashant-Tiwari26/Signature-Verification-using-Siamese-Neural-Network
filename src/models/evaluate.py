@@ -15,7 +15,6 @@ sys.path.append(os.getcwd())
 
 from src.models.cnn import MODELS
 from src.data import SiameseDataset
-from src.utils.loss import ContrastiveLoss
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,13 +26,14 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EvaluationConfig:
-    model_name: Literal['shufflenet', 'custom_large', 'custom']
+    model_name: Literal['shufflenet', 'custom', 'custom_large', 'mobilenet']
     model_weights_path: str
     eval_csv_path: str
     img_dir: str
     distance_threshold: float
     batch_size: int
     resize: int
+    crop_size: int
     cf_save_path: str
     report_save_path: str
     device: str = 'cuda'
@@ -44,7 +44,7 @@ class ModelEvaluation:
         self.config = config
 
         self.model = MODELS[config.model_name]
-        self.model.load_state_dict(torch.load(config.model_weights_path))
+        self.model.load_state_dict(torch.load(config.model_weights_path, weights_only=True))
         self.model.to(config.device)
         self.model.eval()
         logger.info("Model prepared for evaluation")
@@ -52,7 +52,7 @@ class ModelEvaluation:
         self.__get_dataloaders()
 
     def __get_dataloaders(self):
-        eval_data = SiameseDataset(self.config.eval_csv_path, self.config.img_dir, self.config.resize, False)
+        eval_data = SiameseDataset(self.config.eval_csv_path, self.config.img_dir, self.config.resize, self.config.crop_size, False)
         self.eval_dataloader = DataLoader(eval_data, self.config.batch_size, True)
         logger.info("No. of batches in evaluation set = {}".format(len(self.eval_dataloader)))
         logger.info("DataLoader prepared")
