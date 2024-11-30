@@ -1,10 +1,11 @@
 task_type: 'eval'
-model_name: 'custom'
-model_weights_path: 'models/custom_best.pth'
+model_name: 'shufflenet'
+model_weights_path: 'models/shufflenet_best.pth'
 eval_csv_path: 'Data/custom/test.csv'
 img_dir: 'Data/custom/full'
-distance_threshold: 0.15          #* for custom: 0.15, for shufflenet: 0.242
-batch_size: 32
-resize: [155,200]
-cf_save_path: 'reports/figures/custom_cf.png'
-report_save_path: 'reports/results/custom_from_scratch.json'
+distance_threshold: 0.23       #* for custom: 0.15, for shufflenet: 0.242, for mobilenet: 0.23
+batch_size: 128
+resize: 232
+crop_size: 224
+cf_save_path: 'reports/figures/shufflenet_cf.png'
+report_save_path: 'reports/results/shufflenet_from_scratch.json'

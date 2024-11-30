@@ -1,7 +1,9 @@
 import torch
-from torchvision.models.efficientnet import efficientnet_b0, EfficientNet_B0_Weights
-from torchvision.models.mobilenetv3 import mobilenet_v3_large, MobileNet_V3_Large_Weights
-from torchvision.models.shufflenetv2 import shufflenet_v2_x1_5, ShuffleNet_V2_X1_5_Weights
+from torchvision.models.efficientnet import efficientnet_b3, efficientnet_b2
+from torchvision.models.regnet import regnet_y_1_6gf
+from torchvision.models.shufflenetv2 import shufflenet_v2_x1_5
+from torchvision.models.mobilenetv3 import mobilenet_v3_large
+from torchvision.models.mnasnet import mnasnet1_3
 
 class Model_LRN(torch.nn.Module):
     """
@@ -416,9 +418,37 @@ class shufflenet_model(torch.nn.Module):
         y_test = self.model(x_test)
         return torch.nn.functional.pairwise_distance(y_genuine, y_test)
 
+class mobilenet_model(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.model = mobilenet_v3_large()
+        self.model.features[0][0] = torch.nn.Conv2d(1, 16, 3, 2, 1, bias=False)
+        self.model.classifier[3] = torch.nn.Linear(1280, 128)
+        self.apply(self._init_weights)
+    
+    def _init_weights(self, module):
+        if isinstance(module, torch.nn.Conv2d):
+            for name, param in module.named_parameters():
+                if 'weight' in name:
+                    torch.nn.init.normal_(param, mean=0.0, std=0.01)
+                elif 'bias' in name:
+                    torch.nn.init.zeros_(param)
+        elif isinstance(module, torch.nn.Linear):
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.01)
+            if module.bias is not None:
+                torch.nn.init.zeros_(module.bias)
+        elif isinstance(module, torch.nn.BatchNorm2d):
+            torch.nn.init.constant_(module.weight, 1)
+            torch.nn.init.zeros_(module.bias)
+
+    def forward(self, x_genuine, x_test):
+        y_genuine = self.model(x_genuine)
+        y_test = self.model(x_test)
+        return torch.nn.functional.pairwise_distance(y_genuine, y_test)
     
 MODELS = {
     'shufflenet': shufflenet_model(),
+    'mobilenet': mobilenet_model(),
     'custom': Model_BN_s(),
     'custom_large': Model_BN()
 }
